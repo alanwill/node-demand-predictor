@@ -45,7 +45,7 @@ def handler(event, context):
 def create_model(s3_bucket):
 
     mlDatasource = ml.create_data_source_from_s3(
-        DataSourceId='nodeDemandPredictionCsv' + time.time(),
+        DataSourceId='nodeDemandPredictionCsv' + str(time.time()),
         DataSourceName='Node Demand Prediction Source',
         DataSpec={
             'DataLocationS3': 's3://' + s3_bucket + '/nodeDemand.csv',
@@ -55,7 +55,7 @@ def create_model(s3_bucket):
     )
 
     mlModel = ml.create_ml_model(
-        MLModelId='nodeDemandPrediction' + time.time(),
+        MLModelId='nodeDemandPrediction' + str(time.time()),
         MLModelName='Node Demand Prediction Model',
         MLModelType='REGRESSION',
         TrainingDataSourceId=mlDatasource['DataSourceId']
