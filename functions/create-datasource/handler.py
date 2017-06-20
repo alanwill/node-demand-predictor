@@ -23,6 +23,7 @@ log.setLevel(logging.DEBUG)
 # Initializing AWS services
 s3 = boto3.client('s3')
 ml = boto3.client('machinelearning')
+cwevents = boto3.client('events')
 
 
 def handler(event, context):
@@ -38,11 +39,9 @@ def handler(event, context):
         return
 
     convert_to_csv(s3Bucket, s3Object)
-    return create_model(s3Bucket)
+    schedule_datasource_poller(create_datasource(s3Bucket), s3Bucket)
 
-
-
-def create_model(s3_bucket):
+def create_datasource(s3_bucket):
 
     mlDatasource = ml.create_data_source_from_s3(
         DataSourceId='nodeDemandPredictionCsv' + str(time.time()),
@@ -54,18 +53,30 @@ def create_model(s3_bucket):
         ComputeStatistics=True
     )
 
-    mlModel = ml.create_ml_model(
-        MLModelId='nodeDemandPrediction' + str(time.time()),
-        MLModelName='Node Demand Prediction Model',
-        MLModelType='REGRESSION',
-        TrainingDataSourceId=mlDatasource['DataSourceId']
+    return mlDatasource
+
+
+def schedule_datasource_poller(data_source_id, s3_bucket):
+
+    cwevents.put_rule(
+        Name='node-demand-predictor-1m',
+        ScheduleExpression='rate(1 minute)',
+        State='ENABLED',
+        Description='Runs poller every 1 minute'
     )
 
-    realtimeEndpoint = ml.create_realtime_endpoint(
-        MLModelId=mlModel['MLModelId']
+    eventsInput = {"mlArtifacts": {"DataSourceId": data_source_id, "s3Bucket": s3_bucket}}
+    cwevents.put_targets(
+        Rule='node-demand-predictor-1m',
+        Targets=[
+            {
+                'Id': '1',
+                'Arn': os.environ['LAMBDA_DATASOURCE_POLLER_ARN'],
+                'Input': json.dumps(eventsInput)
+            }
+        ]
     )
 
-    return mlModel['MLModelId']
 
 def convert_to_csv(s3_bucket, s3_object):
     s3.download_file(s3_bucket, s3_object, '/tmp/nodeDemand.json')
