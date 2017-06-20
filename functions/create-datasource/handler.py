@@ -26,6 +26,9 @@ ml = boto3.client('machinelearning')
 cwevents = boto3.client('events')
 
 
+# This Lambda function is the first to run. It initiates the data source creation after converting the
+# uploaded file from json to csv. Once it's complete the datasource-poller lambda function takes over.
+
 def handler(event, context):
     log.debug("Received event {}".format(json.dumps(event)))
 
@@ -38,7 +41,11 @@ def handler(event, context):
     if s3Object != 'sample.json':
         return
 
+    # Convert json file to CSV
     convert_to_csv(s3Bucket, s3Object)
+
+    # Schedule the datasource poller function to run every minute. This is the function that'll check if the
+    # datasource is ready before moving on to create the model
     schedule_datasource_poller(create_datasource(s3Bucket))
 
     return

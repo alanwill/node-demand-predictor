@@ -26,6 +26,9 @@ ml = boto3.client('machinelearning')
 cwevents = boto3.client('events')
 
 
+# This lambda function polls the ML service's API every minute to check if the model is complete. Once it is,
+# it creates the prediction endpoint the removes the scheduler.
+
 def handler(event, context):
     log.debug("Received event {}".format(json.dumps(event)))
 
@@ -36,12 +39,14 @@ def handler(event, context):
         MLModelId=mlModelId
     )
 
+    # Check if the model is ready before moving on to create the prediction endpoint.
     if modelStatus['Status'] == 'COMPLETED':
         print('Model ready')
         create_realtime_endpoint(mlModelId)
         cleanup()
     else:
         return
+
 
 def create_realtime_endpoint(ml_model_id):
 
@@ -50,6 +55,9 @@ def create_realtime_endpoint(ml_model_id):
     )
 
     return realtimeEndpoint['MLModelId']
+
+
+# In order to avoid this Lambda function from running in perpetuity, remove the schedule
 
 def cleanup():
     cwevents.remove_targets(

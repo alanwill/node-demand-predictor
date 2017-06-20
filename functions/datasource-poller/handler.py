@@ -26,6 +26,9 @@ ml = boto3.client('machinelearning')
 cwevents = boto3.client('events')
 
 
+# This lambda function polls the ML service's API every minute to check if the datasource is complete. Once it is,
+# it creates the model and schedules the next Lambda function (model-poller) to take over.
+
 def handler(event, context):
     log.debug("Received event {}".format(json.dumps(event)))
 
@@ -36,6 +39,7 @@ def handler(event, context):
         DataSourceId=mlDatasourceId
     )
 
+    # Check if the datasource is ready. If yes create the model, if no, exit
     if datasourceStatus['Status'] == 'COMPLETED':
         print('Datasource ready')
         mlModelId = create_model(mlDatasourceId)
@@ -43,6 +47,7 @@ def handler(event, context):
         cleanup()
     else:
         return
+
 
 def create_model(ml_datasource_id):
 
@@ -83,6 +88,8 @@ def schedule_datasource_poller(model_id):
 
     return
 
+
+# In order to avoid this Lambda function from running in perpetuity, remove the schedule
 
 def cleanup():
     cwevents.remove_targets(
