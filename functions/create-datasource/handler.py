@@ -51,6 +51,7 @@ def create_datasource(s3_bucket):
         DataSourceName='Node Demand Prediction Source',
         DataSpec={
             'DataLocationS3': 's3://' + s3_bucket + '/nodeDemand.csv',
+            'DataRearrangement': '{"splitting": {"percentBegin": 0,"percentEnd": 70}}',
             'DataSchema': '{"version": "1.0","rowId": null,"rowWeight": null,"targetAttributeName": "nodes","dataFormat": "CSV","dataFileContainsHeader": true,"attributes": [{"attributeName": "job","attributeType": "CATEGORICAL"}, {"attributeName": "demand","attributeType": "NUMERIC"}, {"attributeName": "nodes","attributeType": "NUMERIC"}],"excludedAttributeNames": []}',
         },
         ComputeStatistics=True

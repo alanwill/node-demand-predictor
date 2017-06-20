@@ -50,6 +50,11 @@ def create_model(ml_datasource_id):
         MLModelId='nodeDemandPrediction' + str(time.time()),
         MLModelName='Node Demand Prediction Model',
         MLModelType='REGRESSION',
+        Parameters={
+            'sgd.maxMLModelSizeInBytes': '104857600',
+            'sgd.maxPasses': '10',
+            'sgd.shuffleType': 'auto'
+        },
         TrainingDataSourceId=ml_datasource_id
     )
 
