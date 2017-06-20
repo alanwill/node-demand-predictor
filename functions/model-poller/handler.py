@@ -36,8 +36,10 @@ def handler(event, context):
         MLModelId=mlModelId
     )
 
-    if modelStatus['EndpointInfo']['EndpointStatus'] == 'READY':
-        print('Endpoint ready')
+    if modelStatus['Status'] == 'COMPLETED':
+        print('Model ready')
+        create_realtime_endpoint(mlModelId)
+        cleanup()
     else:
         return
 
@@ -51,14 +53,14 @@ def create_realtime_endpoint(ml_model_id):
 
 def cleanup():
     cwevents.remove_targets(
-        Rule='node-demand-predictor-datasourcepoll-1m',
+        Rule='node-demand-predictor-modelpoll-1m',
         Ids=[
             '1',
         ]
     )
 
     cwevents.delete_rule(
-        Name='node-demand-predictor-datasourcepoll-1m'
+        Name='node-demand-predictor-modelpoll-1m'
     )
 
     return
