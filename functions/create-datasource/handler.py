@@ -39,7 +39,10 @@ def handler(event, context):
         return
 
     convert_to_csv(s3Bucket, s3Object)
-    schedule_datasource_poller(create_datasource(s3Bucket), s3Bucket)
+    schedule_datasource_poller(create_datasource(s3Bucket))
+
+    return
+
 
 def create_datasource(s3_bucket):
 
@@ -53,29 +56,30 @@ def create_datasource(s3_bucket):
         ComputeStatistics=True
     )
 
-    return mlDatasource
+    return mlDatasource['DataSourceId']
 
 
-def schedule_datasource_poller(data_source_id, s3_bucket):
+def schedule_datasource_poller(data_source_id):
 
     cwevents.put_rule(
-        Name='node-demand-predictor-1m',
+        Name='node-demand-predictor-datasourcepoll-1m',
         ScheduleExpression='rate(1 minute)',
         State='ENABLED',
         Description='Runs poller every 1 minute'
     )
 
-    eventsInput = {"mlArtifacts": {"DataSourceId": data_source_id, "s3Bucket": s3_bucket}}
     cwevents.put_targets(
-        Rule='node-demand-predictor-1m',
+        Rule='node-demand-predictor-datasourcepoll-1m',
         Targets=[
             {
                 'Id': '1',
                 'Arn': os.environ['LAMBDA_DATASOURCE_POLLER_ARN'],
-                'Input': json.dumps(eventsInput)
+                'Input': json.dumps({"datasourceId": data_source_id})
             }
         ]
     )
+
+    return
 
 
 def convert_to_csv(s3_bucket, s3_object):
