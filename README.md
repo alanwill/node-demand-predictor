@@ -14,6 +14,19 @@ AWS SAM is used for packaging, CloudFormation is used for deployment of the basi
 
 ## Installation
 
+To deploy the app run the following commands:
+
+* `aws cloudformation package --template-file node-predictor.yaml --output-template-file sam-output.yaml --s3-bucket <package-bucket-name>`
+* `aws cloudformation deploy --template-file sam-output.yaml --stack-name <stack-name> --parameter-overrides BucketName=<datasource-bucket-name> --capabilities CAPABILITY_IAM`
+
+where:
+* `<package-bucket-name>` - name of an S3 bucket you have access to in order for SAM to package the code for deployment via CloudFormation. Versioning must be enabled.
+* `<datasource-bucket-name>` - name of a new S3 bucket to be created by the deployment.
+* `<stack-name>` - the desired CloudFormation stack name.
+
+The infrastructure deployment takes about a minute to complete. Once done upload a `sample.json` in the root of `<datasource-bucket-name>`.
+
+The model build process takes ~12 minutes to complete. Once done go to ML Model created in  https://console.aws.amazon.com/machinelearning/home? and use the real-time prediction endpoint to query for desired nodes.
 
 ## Obtaining Predictions
 There's a couple ways to obtain a prediction:
